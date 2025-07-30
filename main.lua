@@ -1,11 +1,7 @@
-function love.load()
-    math.randomseed(os.time())
+-- Seed RNG
+math.randomseed(os.time())
 
-    -- Game state (local to love.load, but stored in globals for access)
-    -- We'll declare these as locals outside love.load for broader access.
-end
-
--- Declare variables local at the top-level scope so all functions can access them
+-- Declare top-level locals
 local applicants = {}
 local currentIndex = 1
 local score = 0
@@ -31,22 +27,22 @@ local rules = {
     noExpiredPassports = true
 }
 
-function generateName()
+-- Utility functions
+local function generateName()
     local syllables = {"Dur", "Grom", "Thra", "Kaz", "Bol", "Guld", "Nor", "Rag", "Zul", "Brok"}
     return syllables[math.random(#syllables)] .. syllables[math.random(#syllables)]
 end
 
-function generateApplicant()
-    local applicant = {
+local function generateApplicant()
+    return {
         name = generateName(),
         race = races[math.random(#races)],
         kingdom = kingdoms[math.random(#kingdoms)],
         passportExpiry = math.random(2020, 2027)
     }
-    return applicant
 end
 
-function checkApplicant(applicant)
+local function checkApplicant(applicant)
     local isValid = true
 
     if rules.requireRace and applicant.race ~= rules.requireRace then
@@ -73,12 +69,11 @@ function checkApplicant(applicant)
     return isValid
 end
 
-function advanceApplicant()
+local function advanceApplicant()
     currentIndex = currentIndex + 1
     applicantsToday = applicantsToday + 1
 
     if applicantsToday >= maxApplicantsPerDay then
-        -- End of day
         day = day + 1
         applicantsToday = 0
         currentIndex = 1
@@ -86,12 +81,11 @@ function advanceApplicant()
         for i = 1, maxApplicantsPerDay do
             table.insert(applicants, generateApplicant())
         end
-        -- Optional: change rules/allies here per day
+        -- Optional: update rules or allies here
     end
 end
 
 function love.load()
-    math.randomseed(os.time())
     applicants = {}
     currentIndex = 1
     score = 0
@@ -101,7 +95,6 @@ function love.load()
     gameOver = false
     showAllies = false
 
-    -- Generate initial applicants
     for i = 1, maxApplicantsPerDay do
         table.insert(applicants, generateApplicant())
     end
@@ -113,7 +106,6 @@ function love.keypressed(key)
     local applicant = applicants[currentIndex]
 
     if key == "a" then
-        -- Approve
         if checkApplicant(applicant) then
             score = score + 1
         else
@@ -121,7 +113,6 @@ function love.keypressed(key)
         end
         advanceApplicant()
     elseif key == "d" then
-        -- Deny
         if not checkApplicant(applicant) then
             score = score + 1
         else
