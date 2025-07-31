@@ -1,12 +1,22 @@
+
 local gamestate = require("gamestate")
 local rules = require("rules")
 local utils = require("utils")
 
+local showIntro = true
+
 function love.load()
     gamestate.init()
+    showIntro = true
 end
 
 function love.keypressed(key)
+    if showIntro then
+        if key == "b" then
+            showIntro = false
+        end
+        return
+    end
     if gamestate.gameOver then return end
 
     local applicant = gamestate:getCurrentApplicant()
@@ -58,10 +68,24 @@ local function tableContains(tbl, val)
 end
 
 function love.draw()
+    if showIntro then
+        love.graphics.setColor(0.7, 0.7, 0.9, 1)
+        love.graphics.rectangle("fill", 100, 200, 600, 300)
+        love.graphics.setColor(0, 0, 0, 1)
+        love.graphics.printf("WELCOME TO THE GATE OF THRUM", 100, 220, 600, "center")
+        love.graphics.printf("REGULATIONS:", 100, 260, 600, "center")
+        love.graphics.printf("- Passports that expire on today's date are NOT valid.", 100, 290, 600, "left")
+        love.graphics.printf("- No elves or citizens of Elvenmere are permitted to enter our sacred halls.", 100, 320, 600, "left")
+        love.graphics.printf("- Our list of grudges is ever-growing! Always check the daily admission rules.", 100, 350, 600, "left")
+        love.graphics.setColor(0, 0.2, 0.6, 1)
+        love.graphics.printf("Press B to begin!", 100, 400, 600, "center")
+        love.graphics.setColor(1, 1, 1, 1)
+        return
+    end
     if gamestate.gameOver then
         if gamestate.specialGameOver then
             love.graphics.setColor(1, 0.2, 0.2, 1)
-            love.graphics.printf("GAME OVER! You let an Elf or Elvenmere citizen into our sacred halls!", 0, 200, 800, "center")
+            love.graphics.printf("GAME OVER! You let a filthy Elf or Elvenmere agent into our sacred halls!", 0, 200, 800, "center")
             love.graphics.setColor(1, 1, 1, 1)
             return
         elseif gamestate.victoryGameOver then
@@ -136,8 +160,8 @@ function love.draw()
         love.graphics.setColor(0, 0, 0, 1)
         love.graphics.printf("REGULATIONS:", 100, 310, 600, "center")
         love.graphics.printf("- Passports that expire on today's date are NOT valid.", 100, 340, 600, "left")
-        love.graphics.printf("- No elves or citizens of Elvenmere are permitted to enter our sacred halls.", 100, 370, 600, "left")
-        love.graphics.printf("- All applicants must be scrutinised thoroughly!", 100, 400, 600, "left")
+        love.graphics.printf("- No Elves or citizens of Elvenmere are permitted to enter our sacred halls.", 100, 370, 600, "left")
+        love.graphics.printf("- Our list of grudges is ever-growing! Always check the daily admission rules.", 100, 400, 600, "left")
         love.graphics.setColor(1, 1, 1, 1)
         return
     else

@@ -53,8 +53,10 @@ function M.isDateExpired(applicantDate, currentDate)
     elseif applicantDate.year == currentDate.year then
         if aMonth < cMonth then
             return true
-        elseif aMonth == cMonth and applicantDate.day < currentDate.day then
-            return true
+        elseif aMonth == cMonth then
+            if applicantDate.day <= currentDate.day then
+                return true -- Expiry on or before today is invalid
+            end
         end
     end
     return false
