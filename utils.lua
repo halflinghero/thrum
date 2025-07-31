@@ -1,8 +1,8 @@
 local M = {}
 
 M.months = {
-    "Dawnrise", "Emberfall", "Frostmere", "Thundershout",
-    "Moonsong", "Starreach", "Ashveil", "Suncrest",
+    "Dawnrise", "Emberfall", "Frostmere", "Thundercry",
+    "Moonsong", "Starshine", "Ashveil", "Suncrest",
     "Goldleaf", "Nightbloom"
 }
 

@@ -4,34 +4,46 @@ local M = {}
 
 local ruleSets = {
     [1] = {
-        requireRace = "Dwarf",
-        requireAlly = true,
-        noExpiredPassports = true,
-        alliedKingdoms = { "Durgondar", "Kharzakul", "Stonevale" }
+        allowedRaces = { "Dwarf" },
+        requireAlly = false,
+        noExpiredPassports = false,
+        alliedKingdoms = {}
     },
     [2] = {
-        requireRace = "Dwarf",
+        allowedRaces = { "Dwarf" },
         requireAlly = false,
         noExpiredPassports = true,
         alliedKingdoms = {}
     },
     [3] = {
-        requireRace = "Elf",
+        allowedRaces = { "Dwarf", "Human" },
         requireAlly = true,
         noExpiredPassports = true,
-        alliedKingdoms = { "Elvenmere", "Thrainholme" }
+        alliedKingdoms = { "Mordakar", "Irondeep" }
     },
     [4] = {
-        requireRace = "Elf",
-        requireAlly = true,
-        noExpiredPassports = false,
-        alliedKingdoms = { "Elvenmere", "Thrainholme" }
-    },
-    [5] = {
-        requireRace = nil,
+        allowedRaces = { "Dwarf", "Halfling" },
         requireAlly = true,
         noExpiredPassports = true,
-        alliedKingdoms = { "Irondeep", "Mordakar" }
+        alliedKingdoms = { "Kharzakul", "Thrainholme" }
+    },
+    [5] = {
+        allowedRaces = { "Dwarf", "Human", "Gnome" },
+        requireAlly = true,
+        noExpiredPassports = true,
+        alliedKingdoms = { "Irondeep", "Stonevale" }
+    },
+    [6] = {
+        allowedRaces = { "Dwarf", "Human", "Halfling", "Gnome" },
+        requireAlly = false,
+        noExpiredPassports = true,
+        alliedKingdoms = {}
+    },
+    [7] = {
+        allowedRaces = { "Dwarf", "Human", "Halfling", "Gnome" },
+        requireAlly = true,
+        noExpiredPassports = false,
+        alliedKingdoms = { "Durgondar", "Irondeep" }
     }
 }
 
@@ -40,10 +52,32 @@ function M.getRulesForDay(day)
 end
 
 function M.checkApplicant(applicant, ruleSet, currentDate)
+    -- Static rule: Elves and those from Elvenmere are always denied
+    if applicant.race == "Elf" or applicant.kingdom == "Elvenmere" then
+        return false
+    end
+
     local isValid = true
 
-    if ruleSet.requireRace and applicant.race ~= ruleSet.requireRace then
-        isValid = false
+    -- Support allowedRaces (day 5+)
+    if ruleSet.allowedRaces then
+        local found = false
+        for _, race in ipairs(ruleSet.allowedRaces) do
+            if applicant.race == race then
+                found = true
+                break
+            end
+        end
+        if not found then
+            isValid = false
+        end
+    elseif ruleSet.requireRace then
+        -- Never allow Elf as required race
+        if ruleSet.requireRace == "Elf" then
+            isValid = false
+        elseif applicant.race ~= ruleSet.requireRace then
+            isValid = false
+        end
     end
 
     if ruleSet.requireAlly then
