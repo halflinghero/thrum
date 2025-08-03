@@ -3,46 +3,43 @@ local gamestate = require("gamestate")
 local rules = require("rules")
 local utils = require("utils")
 
-local showIntro = true
+local showIntro = true -- Show intro screen on load
 
+-- Initialize game state
 function love.load()
     gamestate.init()
     showIntro = true
 end
 
+-- Keypress handler: all game actions
 function love.keypressed(key)
     if showIntro then
-        if key == "b" then
-            showIntro = false
-        end
+        showIntro = false
         return
     end
-    if gamestate.gameOver then return end
+    if gamestate.gameOver then return end -- Block input if game is over
 
     local applicant = gamestate:getCurrentApplicant()
     local ruleSet = gamestate.rules
     local currentDate = gamestate.date
 
-    print("[DEBUG] Key pressed:", key)
-    print("[DEBUG] Applicant race:", applicant.race)
-    print("[DEBUG] Applicant kingdom:", applicant.kingdom)
-
     if key == "a" then
-        -- Move forbidden check before rules check
+        -- Instantly end game if forbidden applicant is approved
         if gamestate:isForbiddenApplicant(applicant) then
             gamestate.specialGameOver = true
             gamestate.gameOver = true
-            return -- Prevent further code execution
+            return
         end
+        -- Apply rules for approval
         if rules.checkApplicant(applicant, ruleSet, currentDate) then
             gamestate:increaseScore()
-            gamestate:advance()
         else
             gamestate:addMistake()
-            gamestate:advance()
         end
+        gamestate:advance()
 
     elseif key == "d" then
+        -- Deny applicant, score if correct
         if not rules.checkApplicant(applicant, ruleSet, currentDate) then
             gamestate:increaseScore()
         else
@@ -59,7 +56,7 @@ function love.keypressed(key)
     end
 end
 
--- Helper function to check if a table contains a value
+-- Utility: Check if a table contains a value
 local function tableContains(tbl, val)
     for _, v in ipairs(tbl) do
         if v == val then return true end
@@ -67,6 +64,7 @@ local function tableContains(tbl, val)
     return false
 end
 
+-- Main draw function: handles all UI and game screens
 function love.draw()
     if showIntro then
         love.graphics.setColor(0.7, 0.7, 0.9, 1)
@@ -78,14 +76,15 @@ function love.draw()
         love.graphics.printf("- No elves or citizens of Elvenmere are permitted to enter our sacred halls.", 100, 320, 600, "left")
         love.graphics.printf("- Our list of grudges is ever-growing! Always check the daily admission rules.", 100, 350, 600, "left")
         love.graphics.setColor(0, 0.2, 0.6, 1)
-        love.graphics.printf("Press B to begin!", 100, 400, 600, "center")
+        love.graphics.printf("Press any key to begin!", 100, 400, 600, "center")
         love.graphics.setColor(1, 1, 1, 1)
         return
     end
+    -- Game Over Screens
     if gamestate.gameOver then
         if gamestate.specialGameOver then
             love.graphics.setColor(1, 0.2, 0.2, 1)
-            love.graphics.printf("GAME OVER! You let a filthy Elf or Elvenmere agent into our sacred halls!", 0, 200, 800, "center")
+            love.graphics.printf("GAME OVER! You let an Elf or Elvenmere citizen into our sacred halls!", 0, 200, 800, "center")
             love.graphics.setColor(1, 1, 1, 1)
             return
         elseif gamestate.victoryGameOver then
@@ -99,9 +98,11 @@ function love.draw()
         end
     end
 
+    -- Main game info
     love.graphics.printf("Day " .. gamestate.day .. " | Date: " .. utils.getDateString(gamestate.date), 0, 10, 800, "center")
     love.graphics.printf("Score: " .. gamestate.score .. " | Strikes: " .. gamestate.mistakes .. "/" .. gamestate.maxMistakes, 0, 30, 800, "center")
 
+    -- Rules panel
     local ruleSet = gamestate.rules
     local ruleY = 80
     if ruleSet.allowedRaces then
@@ -131,6 +132,7 @@ function love.draw()
 
     local y = 160
 
+    -- Calendar panel
     if gamestate.showCalendar and gamestate.day > 1 then
         love.graphics.printf("Calendar:", 10, y, 800, "left")
         local maxLen = #tostring(#utils.months)
@@ -145,6 +147,7 @@ function love.draw()
         return
     end
 
+    -- Allies panel
     if gamestate.showAllies and gamestate.day > 2 then
         love.graphics.printf("Current Allied Kingdoms:", 10, y, 800, "left")
         if not ruleSet.requireAlly or not ruleSet.alliedKingdoms or #ruleSet.alliedKingdoms == 0 then
@@ -160,11 +163,12 @@ function love.draw()
         love.graphics.setColor(0, 0, 0, 1)
         love.graphics.printf("REGULATIONS:", 100, 310, 600, "center")
         love.graphics.printf("- Passports that expire on today's date are NOT valid.", 100, 340, 600, "left")
-        love.graphics.printf("- No Elves or citizens of Elvenmere are permitted to enter our sacred halls.", 100, 370, 600, "left")
-        love.graphics.printf("- Our list of grudges is ever-growing! Always check the daily admission rules.", 100, 400, 600, "left")
+        love.graphics.printf("- No elves or citizens of Elvenmere are permitted to enter our sacred halls.", 100, 370, 600, "left")
+        love.graphics.printf("- All applicants must be scrutinised thoroughly!", 100, 400, 600, "left")
         love.graphics.setColor(1, 1, 1, 1)
         return
     else
+        -- Applicant info panel
         local applicant = gamestate:getCurrentApplicant()
         love.graphics.printf("Applicant " .. gamestate.currentIndex .. " of " .. gamestate.maxApplicantsPerDay, 0, y, 800, "center")
         love.graphics.printf("Name: " .. applicant.name, 0, y + 40, 800, "center")
@@ -179,7 +183,7 @@ function love.draw()
         love.graphics.printf(prompt, 0, y + 180, 800, "center")
     end
 
-    -- DWARVEN POLITICAL FLAVOR RULE
+    -- Dwarven flavor rule at bottom
     love.graphics.setColor(0.8, 0.6, 0.2, 1) -- gold-ish
     love.graphics.printf("BY ORDER OF THE IRON COUNCIL: NO ELVES! NO CITIZENS OF ELVENMERE!", 0, 520, 800, "center")
     love.graphics.setColor(1, 1, 1, 1) -- reset color

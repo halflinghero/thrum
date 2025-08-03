@@ -1,15 +1,19 @@
+
 local M = {}
 
+-- List of months in the Thrum calendar
 M.months = {
     "Dawnrise", "Emberfall", "Frostmere", "Thundercry",
     "Moonsong", "Starshine", "Ashveil", "Suncrest",
     "Goldleaf", "Nightbloom"
 }
 
+-- Converts a month number to its name
 function M.monthNumberToName(num)
     return M.months[num] or "Unknown"
 end
 
+-- Converts a month name to its number (1-based)
 function M.monthNameToNumber(name)
     for i, m in ipairs(M.months) do
         if m == name then return i end
@@ -17,6 +21,7 @@ function M.monthNameToNumber(name)
     return nil
 end
 
+-- Returns a formatted date string (e.g., "1st of Dawnrise, Year 1320")
 function M.getDateString(date)
     local suffix = "th of"
     if date.day == 1 then suffix = "st of"
@@ -26,6 +31,7 @@ function M.getDateString(date)
     return string.format("%d%s %s, Year %d", date.day, suffix, date.month, date.year)
 end
 
+-- Advances the date by one day, rolling over months and years as needed
 function M.advanceDate(date)
     local monthIndex = M.monthNameToNumber(date.month)
     if not monthIndex then
@@ -44,6 +50,7 @@ function M.advanceDate(date)
     end
 end
 
+-- Returns true if applicantDate is before or equal to currentDate (i.e., expired)
 function M.isDateExpired(applicantDate, currentDate)
     local aMonth = M.monthNameToNumber(applicantDate.month)
     local cMonth = M.monthNameToNumber(currentDate.month)
@@ -53,10 +60,8 @@ function M.isDateExpired(applicantDate, currentDate)
     elseif applicantDate.year == currentDate.year then
         if aMonth < cMonth then
             return true
-        elseif aMonth == cMonth then
-            if applicantDate.day <= currentDate.day then
-                return true -- Expiry on or before today is invalid
-            end
+        elseif aMonth == cMonth and applicantDate.day <= currentDate.day then
+            return true -- Expiry on or before today is invalid
         end
     end
     return false

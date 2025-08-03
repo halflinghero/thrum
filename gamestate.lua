@@ -1,13 +1,16 @@
+
 local applicant = require("applicant")
 local rules = require("rules")
 local utils = require("utils")
 
 local M = {}
 
+-- Returns true if applicant is forbidden (Elf or Elvenmere)
 function M:isForbiddenApplicant(applicant)
     return applicant and (applicant.race == "Elf" or applicant.kingdom == "Elvenmere")
 end
 
+-- Initializes all game state variables
 function M.init()
     math.randomseed(os.time())
 
@@ -27,7 +30,7 @@ function M.init()
     M.showCalendar = false
     M.showRegulations = false
 
-    -- Randomise start date
+    -- Randomize start date
     local startMonth = utils.months[math.random(1, #utils.months)]
     local startDay = math.random(1, 10)
     local startYear = math.random(1320, 1330)
@@ -37,19 +40,21 @@ function M.init()
     M.currentIndex = 1
 
     M.rules = rules.getRulesForDay(M.day)
-    
     M:generateApplicants()
 end
 
+-- Generates the list of applicants for the current day
 function M:generateApplicants()
     self.applicants = {}
     local ruleSet = self.rules
     local currentDate = self.date
+
     -- Ensure passport expiry rule persists after Day 2
     if self.day >= 2 then
         ruleSet.noExpiredPassports = true
     end
 
+    -- Helper to bias applicant generation toward current rules
     local function biasedApplicant(year)
         local a = applicant.generateApplicant(year)
         if ruleSet.requireRace and math.random() < 0.5 then
@@ -117,6 +122,7 @@ function M:generateApplicants()
         for i = 1, self.maxApplicantsPerDay - 1 do
             table.insert(self.applicants, biasedApplicant(self.date.year))
         end
+        -- Ensure at least one valid applicant
         local validApplicant = applicant.generateApplicant(self.date.year)
         local tries = 0
         while not rules.checkApplicant(validApplicant, ruleSet, currentDate) and tries < 100 do
@@ -124,6 +130,7 @@ function M:generateApplicants()
             tries = tries + 1
         end
         table.insert(self.applicants, validApplicant)
+        -- Shuffle applicants
         for i = #self.applicants, 2, -1 do
             local j = math.random(i)
             self.applicants[i], self.applicants[j] = self.applicants[j], self.applicants[i]
@@ -131,6 +138,7 @@ function M:generateApplicants()
     end
 end
 
+-- Advances to the next applicant or day, handles game over logic
 function M:advance()
     self.currentIndex = self.currentIndex + 1
     self.applicantsToday = self.applicantsToday + 1
@@ -156,16 +164,19 @@ function M:advance()
     if self.gameOver then return end
 end
 
+-- Returns the current applicant
 function M:getCurrentApplicant()
     return self.applicants[self.currentIndex]
 end
 
+-- Increases score for correct approval
 function M:increaseScore()
     self.score = self.score + 1
     self.approvalsToday = self.approvalsToday + 1
     if self.gameOver then return end
 end
 
+-- Adds a mistake for incorrect action
 function M:addMistake()
     self.mistakes = self.mistakes + 1
     self.lastActionWasApproval = false
@@ -175,10 +186,12 @@ function M:addMistake()
     if self.gameOver then return end
 end
 
+-- Toggles the allies info panel
 function M:toggleAllies()
     self.showAllies = not self.showAllies
 end
 
+-- Toggles the calendar info panel
 function M:toggleCalendar()
     self.showCalendar = not self.showCalendar
 end
