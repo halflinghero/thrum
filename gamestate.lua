@@ -26,7 +26,8 @@ function M.init()
     M.currentIndex = 1
 
     -- Randomize start date
-    local startMonth = math.random(1, 12)
+    local startMonthIndex = math.random(1, #utils.months)
+    local startMonth = utils.months[startMonthIndex]
     local startDay = math.random(1, 10)
     local startYear = 2025
     M.date = { day = startDay, month = startMonth, year = startYear }

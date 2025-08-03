@@ -177,17 +177,21 @@ function love.draw()
     else
         -- Applicant info panel
         local applicant = gamestate:getCurrentApplicant()
-        love.graphics.printf("Applicant " .. gamestate.currentIndex .. " of " .. gamestate.maxApplicantsPerDay, 0, y, 800, "center")
-        love.graphics.printf("Name: " .. applicant.name, 0, y + 40, 800, "center")
-        love.graphics.printf("Race: " .. applicant.race, 0, y + 70, 800, "center")
-        love.graphics.printf("Kingdom: " .. applicant.kingdom, 0, y + 100, 800, "center")
-        love.graphics.printf("Passport Expiry: " .. utils.getDateString(applicant.passportExpiry), 0, y + 130, 800, "center")
+        if applicant then
+            love.graphics.printf("Applicant " .. tostring(gamestate.currentIndex) .. " of " .. tostring(gamestate.maxApplicantsPerDay), 0, y, 800, "center")
+            love.graphics.printf("Name: " .. (applicant.name or "Unknown"), 0, y + 40, 800, "center")
+            love.graphics.printf("Race: " .. (applicant.race or "Unknown"), 0, y + 70, 800, "center")
+            love.graphics.printf("Kingdom: " .. (applicant.kingdom or "Unknown"), 0, y + 100, 800, "center")
+            love.graphics.printf("Passport Expiry: " .. (applicant.passportExpiry and utils.getDateString(applicant.passportExpiry) or "Unknown"), 0, y + 130, 800, "center")
 
-        local prompt = "Press A to Approve, D to Deny"
-        if gamestate.day > 1 then prompt = prompt .. ", C to View Calendar" end
-        if gamestate.day > 2 then prompt = prompt .. ", F to View Allies" end
-        prompt = prompt .. ", R to Check Regulations"
-        love.graphics.printf(prompt, 0, y + 180, 800, "center")
+            local prompt = "Press A to Approve, D to Deny"
+            if gamestate.day > 1 then prompt = prompt .. ", C to View Calendar" end
+            if gamestate.day > 2 then prompt = prompt .. ", F to View Allies" end
+            prompt = prompt .. ", R to Check Regulations"
+            love.graphics.printf(prompt, 0, y + 180, 800, "center")
+        else
+            love.graphics.printf("No more applicants today.", 0, y, 800, "center")
+        end
     end
 
     -- Dwarven flavor rule at bottom
@@ -203,6 +207,7 @@ function love.mousepressed(x, y, button)
         local btnX, btnY = 300, 320
         if x >= btnX and x <= btnX + btnW and y >= btnY and y <= btnY + btnH then
             gamestate:restart()
+            showIntro = true
         end
         return
     end
