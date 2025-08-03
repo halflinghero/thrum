@@ -1,4 +1,3 @@
-
 local gamestate = require("gamestate")
 local rules = require("rules")
 local utils = require("utils")
@@ -82,20 +81,28 @@ function love.draw()
     end
     -- Game Over Screens
     if gamestate.gameOver then
+        local y = 200
         if gamestate.specialGameOver then
-            love.graphics.setColor(1, 0.2, 0.2, 1)
-            love.graphics.printf("GAME OVER! You let an Elf or Elvenmere citizen into our sacred halls!", 0, 200, 800, "center")
-            love.graphics.setColor(1, 1, 1, 1)
-            return
+            love.graphics.printf("GAME OVER! You let an Elf or Elvenmere citizen into our sacred halls!", 0, y, 800, "center")
+            y = y + 40
         elseif gamestate.victoryGameOver then
-            love.graphics.setColor(0.8, 0.6, 0.2, 1)
-            love.graphics.printf("THE WEEK IS DONE! YOU HAVE SERVED THE IRON COUNCIL WITH UNYIELDING VIGILANCE. DRINK YOUR FILL UNTIL THE NEXT WEEK'S WORK!", 0, 200, 800, "center")
-            love.graphics.setColor(1, 1, 1, 1)
-            return
+            love.graphics.printf("CONGRATULATIONS! You have successfully completed all days!", 0, y, 800, "center")
+            y = y + 40
         else
-            love.graphics.printf("Game Over! Final Score: " .. gamestate.score, 0, 200, 800, "center")
-            return
+            love.graphics.printf("GAME OVER! Too many mistakes.", 0, y, 800, "center")
+            y = y + 40
         end
+        love.graphics.printf("Score: " .. gamestate.score .. " | Strikes: " .. gamestate.mistakes .. "/" .. gamestate.maxMistakes, 0, y, 800, "center")
+        y = y + 40
+        -- Draw Restart button
+        local btnW, btnH = 200, 50
+        local btnX, btnY = 300, y + 40
+        love.graphics.setColor(0.2, 0.6, 0.2)
+        love.graphics.rectangle("fill", btnX, btnY, btnW, btnH, 10, 10)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.printf("Restart", btnX, btnY + 15, btnW, "center")
+        love.graphics.setColor(1, 1, 1)
+        return
     end
 
     -- Main game info
@@ -187,4 +194,16 @@ function love.draw()
     love.graphics.setColor(0.8, 0.6, 0.2, 1) -- gold-ish
     love.graphics.printf("BY ORDER OF THE IRON COUNCIL: NO ELVES! NO CITIZENS OF ELVENMERE!", 0, 520, 800, "center")
     love.graphics.setColor(1, 1, 1, 1) -- reset color
+end
+
+function love.mousepressed(x, y, button)
+    if gamestate.gameOver then
+        -- Check if Restart button is clicked
+        local btnW, btnH = 200, 50
+        local btnX, btnY = 300, 320
+        if x >= btnX and x <= btnX + btnW and y >= btnY and y <= btnY + btnH then
+            gamestate:restart()
+        end
+        return
+    end
 end

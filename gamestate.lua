@@ -1,4 +1,3 @@
-
 local applicant = require("applicant")
 local rules = require("rules")
 local utils = require("utils")
@@ -12,35 +11,35 @@ end
 
 -- Initializes all game state variables
 function M.init()
-    math.randomseed(os.time())
-
     M.day = 1
     M.maxApplicantsPerDay = 5
     M.applicantsToday = 0
-
     M.score = 0
     M.mistakes = 0
     M.maxMistakes = 3
     M.approvalsToday = 0
     M.maxDays = 7
-
     M.gameOver = false
     M.specialGameOver = false
-    M.showAllies = false
+    M.victoryGameOver = false
     M.showCalendar = false
-    M.showRegulations = false
+    M.currentIndex = 1
 
     -- Randomize start date
-    local startMonth = utils.months[math.random(1, #utils.months)]
+    local startMonth = math.random(1, 12)
     local startDay = math.random(1, 10)
-    local startYear = math.random(1320, 1330)
+    local startYear = 2025
     M.date = { day = startDay, month = startMonth, year = startYear }
 
     M.applicants = {}
-    M.currentIndex = 1
-
     M.rules = rules.getRulesForDay(M.day)
     M:generateApplicants()
+end
+
+-- Resets the game state to start a new game
+function M:restart()
+    self:init()
+    self.currentIndex = 1
 end
 
 -- Generates the list of applicants for the current day
@@ -152,6 +151,10 @@ function M:advance()
         self.day = self.day + 1
         self.applicantsToday = 0
         self.currentIndex = 1
+        -- Ensure date.month is always a string (month name)
+        if type(self.date.month) == "number" then
+            self.date.month = utils.months[self.date.month] or utils.months[1]
+        end
         utils.advanceDate(self.date)
 
         self.rules = rules.getRulesForDay(self.day)
