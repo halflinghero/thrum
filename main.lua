@@ -3,11 +3,25 @@ local rules = require("rules")
 local utils = require("utils")
 
 local showIntro = true -- Show intro screen on load
+local defaultFont
+
+-- Day transition system
+local transitionState = "none" -- "fadeOut", "showScreen", "fadeIn", "none"
+local transitionTimer = 0
+local transitionDuration = { fadeOut = 0.7, showScreen = 1.2, fadeIn = 0.7 } -- Shorter fade for debugging
+local transitionAlpha = 0
+local bannerText = ""
+local chimePlayed = false
+local chimeSound
 
 -- Initialize game state
 function love.load()
     gamestate.init()
     showIntro = true
+    if love.audio then
+        chimeSound = love.audio.newSource("assets/chime.wav", "static")
+    end
+    defaultFont = love.graphics.getFont()
 end
 
 -- Keypress handler: all game actions
@@ -16,11 +30,21 @@ function love.keypressed(key)
         showIntro = false
         return
     end
+    if transitionState ~= "none" then return end -- Block input during transition
     if gamestate.gameOver then return end -- Block input if game is over
 
     local applicant = gamestate:getCurrentApplicant()
     local ruleSet = gamestate.rules
     local currentDate = gamestate.date
+
+    local function startDayTransition()
+        transitionState = "fadeOut"
+        transitionTimer = 0
+        transitionAlpha = 0
+        bannerY = -80
+        bannerText = "Day " .. tostring(gamestate.day) .. " Begins!\n" .. utils.getDateString(gamestate.date)
+        chimePlayed = false
+    end
 
     if key == "a" then
         -- Instantly end game if forbidden applicant is approved
@@ -35,7 +59,12 @@ function love.keypressed(key)
         else
             gamestate:addMistake()
         end
+        local prevDay = gamestate.day
         gamestate:advance()
+        if gamestate.day > prevDay and not gamestate.gameOver then
+            startDayTransition()
+            return
+        end
 
     elseif key == "d" then
         -- Deny applicant, score if correct
@@ -44,7 +73,12 @@ function love.keypressed(key)
         else
             gamestate:addMistake()
         end
+        local prevDay = gamestate.day
         gamestate:advance()
+        if gamestate.day > prevDay and not gamestate.gameOver then
+            startDayTransition()
+            return
+        end
 
     elseif key == "f" then
         gamestate:toggleAllies()
@@ -53,6 +87,35 @@ function love.keypressed(key)
     elseif key == "c" then
         gamestate:toggleCalendar()
     end
+function love.update(dt)
+    if transitionState == "fadeOut" then
+        transitionTimer = transitionTimer + dt
+        transitionAlpha = math.min(transitionTimer / transitionDuration.fadeOut, 1)
+        if transitionTimer >= transitionDuration.fadeOut then
+            transitionState = "showScreen"
+            transitionTimer = 0
+            transitionAlpha = 1
+        end
+    elseif transitionState == "showScreen" then
+        transitionTimer = transitionTimer + dt
+        if not chimePlayed and chimeSound then
+            love.audio.play(chimeSound)
+            chimePlayed = true
+        end
+        if transitionTimer >= transitionDuration.showScreen then
+            transitionState = "fadeIn"
+            transitionTimer = 0
+            transitionAlpha = 1
+        end
+    elseif transitionState == "fadeIn" then
+        transitionTimer = transitionTimer + dt
+        transitionAlpha = 1 - math.min(transitionTimer / transitionDuration.fadeIn, 1)
+        if transitionTimer >= transitionDuration.fadeIn then
+            transitionState = "none"
+            transitionAlpha = 0
+        end
+    end
+end
 end
 
 -- Utility: Check if a table contains a value
@@ -69,13 +132,35 @@ function love.draw()
         love.graphics.setColor(0.7, 0.7, 0.9, 1)
         love.graphics.rectangle("fill", 100, 200, 600, 300)
         love.graphics.setColor(0, 0, 0, 1)
-        love.graphics.printf("WELCOME TO THE GATE OF THRUM", 100, 220, 600, "center")
+        love.graphics.printf("THE GATE OF THRUM STANDS BEFORE YOU", 100, 220, 600, "center")
         love.graphics.printf("REGULATIONS:", 100, 260, 600, "center")
         love.graphics.printf("- Passports that expire on today's date are NOT valid.", 100, 290, 600, "left")
         love.graphics.printf("- No elves or citizens of Elvenmere are permitted to enter our sacred halls.", 100, 320, 600, "left")
         love.graphics.printf("- Our list of grudges is ever-growing! Always check the daily admission rules.", 100, 350, 600, "left")
         love.graphics.setColor(0, 0.2, 0.6, 1)
-        love.graphics.printf("Press any key to begin!", 100, 400, 600, "center")
+        love.graphics.printf("PRESS ANY KEY TO BEGIN", 100, 400, 600, "center")
+        love.graphics.setColor(1, 1, 1, 1)
+        return
+    end
+
+    -- Day transition overlay
+    if transitionState ~= "none" then
+        -- Draw previous frame as usual, then overlay
+        if transitionState == "fadeOut" or transitionState == "fadeIn" then
+            love.graphics.setColor(0, 0, 0, transitionAlpha)
+            love.graphics.rectangle("fill", 0, 0, 800, 600)
+        end
+        if transitionState == "showScreen" then
+            love.graphics.setColor(0, 0, 0, 1)
+            love.graphics.rectangle("fill", 0, 0, 800, 600)
+            love.graphics.setColor(0.2, 0.2, 0.3, 0.95)
+            love.graphics.rectangle("fill", 100, 200, 600, 160, 20, 20)
+            love.graphics.setColor(1, 1, 1, 1)
+            local bigFont = love.graphics.newFont(32)
+            love.graphics.setFont(bigFont)
+            love.graphics.printf(bannerText, 100, 240, 600, "center")
+            love.graphics.setFont(defaultFont)
+        end
         love.graphics.setColor(1, 1, 1, 1)
         return
     end
@@ -86,10 +171,10 @@ function love.draw()
             love.graphics.printf("GAME OVER! You let an Elf or Elvenmere citizen into our sacred halls!", 0, y, 800, "center")
             y = y + 40
         elseif gamestate.victoryGameOver then
-            love.graphics.printf("CONGRATULATIONS! You have successfully completed all days!", 0, y, 800, "center")
+            love.graphics.printf("CONGRATULATIONS! The enemies of Thrum were kept at bay!", 0, y, 800, "center")
             y = y + 40
         else
-            love.graphics.printf("GAME OVER! Too many mistakes.", 0, y, 800, "center")
+            love.graphics.printf("GAME OVER! The halls of Thrum brim with spies, your watch has ended.", 0, y, 800, "center")
             y = y + 40
         end
         love.graphics.printf("Score: " .. gamestate.score .. " | Strikes: " .. gamestate.mistakes .. "/" .. gamestate.maxMistakes, 0, y, 800, "center")
@@ -170,7 +255,7 @@ function love.draw()
         love.graphics.setColor(0, 0, 0, 1)
         love.graphics.printf("REGULATIONS:", 100, 310, 600, "center")
         love.graphics.printf("- Passports that expire on today's date are NOT valid.", 100, 340, 600, "left")
-        love.graphics.printf("- No elves or citizens of Elvenmere are permitted to enter our sacred halls.", 100, 370, 600, "left")
+        love.graphics.printf("- No Elves or citizens of Elvenmere are permitted to enter our sacred halls.", 100, 370, 600, "left")
         love.graphics.printf("- All applicants must be scrutinised thoroughly!", 100, 400, 600, "left")
         love.graphics.setColor(1, 1, 1, 1)
         return
